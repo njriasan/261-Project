@@ -18,56 +18,16 @@ public class Server {
 		return new ServerSocket (port, NUMCONNECTIONS);
 	}
 
-	public static void receiveInput (Socket s) throws IOException {
-		/* stream to read from the client. */
-		Scanner serverInput = null;
-		PrintWriter serverOutput = null;
-		try {
-			serverInput = new Scanner (
-						s.getInputStream ());
-		} catch (IOException e) {
-			System.err.println ("Unable to create input stream.");
-			return;
-		}
-		try {
-			serverOutput = new PrintWriter (
-					new OutputStreamWriter (
-					s.getOutputStream ()), true);
-		} catch (IOException e) {
-			System.err.println ("Unable to create output stream.");
-			return;
-		}
-		String nextLine = "";
-		while (true) {
-			if (!serverInput.hasNextLine ()) {
-				throw new IOException ();
-			}
-			nextLine = serverInput.nextLine ();
-			System.out.println (nextLine);
-			serverOutput.println ("Message successfully received."); 
-		}
-	}
-
 	public static void socketListen (ServerSocket sock) {
 		while (true) {
 			Socket s = null;
 			try {
 				s = sock.accept ();
+				Thread t = new Thread (new ProcessSocket (s));
+				t.start ();
 			} catch (IOException e) {
 				System.err.println ("Failed to accept new" +
 						" connection.");
-				continue;
-			}
-			try {
-				receiveInput (s);
-			} catch (IOException e) {
-				System.out.println ("Closed connection with"
-						+ " client.");
-			}
-			try {
-				s.close ();	
-			} catch (IOException e) {
-				System.err.println ("Unable to close socket.");
 			}
 		}
 	}	
@@ -93,5 +53,52 @@ public class Server {
 			System.exit (1);	
 		}
 		socketListen (serverSock);
+	}
+}
+
+class ProcessSocket implements Runnable {
+	public Socket sock;
+
+	ProcessSocket (Socket s) {
+		sock = s;
+	}
+
+	public void run () {
+		/* stream to read from the client. */
+		Scanner serverInput = null;
+		PrintWriter serverOutput = null;
+		try {
+			serverInput = new Scanner (
+						sock.getInputStream ());
+		} catch (IOException e) {
+			System.err.println ("Unable to create input stream.");
+			return;
+		}
+		try {
+			serverOutput = new PrintWriter (
+					new OutputStreamWriter (
+					sock.getOutputStream ()), true);
+		} catch (IOException e) {
+			System.err.println ("Unable to create output stream.");
+			return;
+		}
+		try {
+			String nextLine = "";
+			while (true) {
+				if (!serverInput.hasNextLine ()) {
+					throw new IOException ();
+				}
+				nextLine = serverInput.nextLine ();
+				System.out.println (nextLine);
+				serverOutput.println ("Message successfully received."); 
+			}
+		} catch (IOException e) {
+			System.out.println ("Connection closed.");
+		}
+		try {
+			sock.close ();
+		} catch (IOException e) {
+			System.err.println ("Socket already closed.");
+		}
 	}
 }
