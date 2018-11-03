@@ -1,7 +1,5 @@
 import java.io.IOException;
 import java.net.UnknownHostException;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.util.Scanner;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -15,8 +13,6 @@ import java.net.Socket;
  */
 
 public class Client {
-	public static final String ENCODING = "UTF-16BE";
-
 	public static Socket connectToServer (InetAddress IPAddr, int port)
        		throws IOException {
 		return new Socket (IPAddr, port);	
@@ -24,13 +20,11 @@ public class Client {
 
 	public static void processConnection (Socket s) throws IOException {
 		Scanner standardInput = null;
-		BufferedReader serverOutput = null;
+		Scanner serverOutput = null;
 		PrintWriter clientOutput = null;
-		standardInput = new Scanner (System.in, ENCODING);
+		standardInput = new Scanner (System.in);
 		try {
-			serverOutput = new BufferedReader (
-					new InputStreamReader (
-						s.getInputStream (), ENCODING));
+			serverOutput = new Scanner (s.getInputStream ());
 		} catch (IOException e) {
 			System.err.println ("Unable to create input stream.");
 			return;
@@ -38,26 +32,26 @@ public class Client {
 		try {
 			clientOutput = new PrintWriter (
 					new OutputStreamWriter (
-					s.getOutputStream (), ENCODING), true);
+					s.getOutputStream ()), true);
 		} catch (IOException e) {
 			System.err.println ("Unable to create output stream.");
 			return;
 		}
-		String nextLine = "";
+		String nextInputLine = "";
+		String nextServerLine = "";
 		while (true) {
 			System.out.print ("Me: ");
 			if (!standardInput.hasNextLine ()) {
 				throw new IOException ();
 			}
-			nextLine = standardInput.nextLine ();
-			System.out.print (nextLine);
-			clientOutput.print (nextLine);
-			nextLine = serverOutput.readLine ();
-			if (nextLine == null) {
+			nextInputLine = standardInput.nextLine ();
+			System.out.println (nextInputLine);
+			clientOutput.println (nextInputLine);
+			if (!serverOutput.hasNextLine ()) {
 				throw new IOException ();
 			}
-			serverOutput.skip (1);
-			System.out.println (nextLine);
+			nextServerLine = serverOutput.nextLine ();
+			System.out.println (nextServerLine);
 		}
 	}
 
@@ -90,6 +84,11 @@ public class Client {
 		try {
 			processConnection (s);
 		} catch (IOException e) {
+		}
+		try {
+			s.close ();
+		} catch (IOException e) {
+			System.err.println ("Socket already closed.");
 		}
 	}
 }

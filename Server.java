@@ -1,7 +1,6 @@
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.io.InputStreamReader;
-import java.io.BufferedReader;
+import java.util.Scanner;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
@@ -14,7 +13,6 @@ import java.net.ServerSocket;
  */
 public class Server {
 	public static final int NUMCONNECTIONS = 100;
-	public static final String ENCODING = "UTF-16BE";
 
 	public static ServerSocket startServer (int port) throws IOException {
 		return new ServerSocket (port, NUMCONNECTIONS);
@@ -22,12 +20,11 @@ public class Server {
 
 	public static void receiveInput (Socket s) throws IOException {
 		/* stream to read from the client. */
-		BufferedReader serverInput = null;
+		Scanner serverInput = null;
 		PrintWriter serverOutput = null;
 		try {
-			serverInput = new BufferedReader (
-					new InputStreamReader (
-						s.getInputStream (), ENCODING));
+			serverInput = new Scanner (
+						s.getInputStream ());
 		} catch (IOException e) {
 			System.err.println ("Unable to create input stream.");
 			return;
@@ -35,18 +32,17 @@ public class Server {
 		try {
 			serverOutput = new PrintWriter (
 					new OutputStreamWriter (
-					s.getOutputStream (), ENCODING), true);
+					s.getOutputStream ()), true);
 		} catch (IOException e) {
 			System.err.println ("Unable to create output stream.");
 			return;
 		}
 		String nextLine = "";
 		while (true) {
-			nextLine = serverInput.readLine ();
-			if (nextLine == null) {
+			if (!serverInput.hasNextLine ()) {
 				throw new IOException ();
 			}
-			serverInput.skip (1);
+			nextLine = serverInput.nextLine ();
 			System.out.println (nextLine);
 			serverOutput.println ("Message successfully received."); 
 		}
